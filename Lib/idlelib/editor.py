@@ -1281,6 +1281,11 @@ class EditorWindow(object):
         # Delete whitespace left, until hitting a real char or closest
         # preceding virtual tab stop.
         chars = text.get("insert linestart", "insert")
+        try:
+            ispromptline = text.index("insert").split(".")[0] == \
+                           text.index("last_prompt").split(".")[0]
+        except TclError:
+            ispromptline = False
         if chars == '':
             if text.compare("insert", ">", "1.0"):
                 # easy: delete preceding newline
@@ -1301,7 +1306,7 @@ class EditorWindow(object):
         # Debug prompt is multilined....
         ncharsdeleted = 0
         while 1:
-            if chars == self.prompt_last_line:  # '' unless PyShell
+            if chars == self.prompt_last_line and ispromptline:  # '' unless PyShell
                 break
             chars = chars[:-1]
             ncharsdeleted = ncharsdeleted + 1

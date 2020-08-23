@@ -1272,6 +1272,7 @@ class PyShell(OutputWindow):
         self.resetoutput()
         self.console.write(self.prompt)
         self.text.mark_set("insert", "end-1c")
+        self.text.mark_set("last_prompt", "end-1c linestart")
         self.set_line_and_column()
         self.io.reset_undo()
 
