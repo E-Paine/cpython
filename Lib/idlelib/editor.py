@@ -1282,8 +1282,7 @@ class EditorWindow(object):
         # preceding virtual tab stop.
         chars = text.get("insert linestart", "insert")
         try:
-            ispromptline = text.index("insert").split(".")[0] == \
-                           text.index("last_prompt").split(".")[0]
+            ispromptline = text.index("insert linestart") == text.index("last_prompt")
         except TclError:
             ispromptline = False
         if chars == '':
