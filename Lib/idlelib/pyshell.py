@@ -1473,7 +1473,7 @@ def main():
     # Setup root.  Don't break user code run in IDLE process.
     # Don't change environment when testing.
     if use_subprocess and not testing:
-        NoDefaultRoot()
+        no_default_root()
     root = Tk(className="Idle")
     root.withdraw()
     from idlelib.run import fix_scaling

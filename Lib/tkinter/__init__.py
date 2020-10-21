@@ -29,10 +29,13 @@ button = tkinter.Button(frame,text="Exit",command=tk.destroy)
 button.pack(side=BOTTOM)
 tk.mainloop()
 """
+from __future__ import annotations
 
 import enum
 import sys
 import types
+import warnings
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import _tkinter # If this fails your Python may not be configured for Tk
 TclError = _tkinter.TclError
@@ -270,21 +273,24 @@ class Event:
         )
 
 
-_support_default_root = 1
-_default_root = None
+_support_default_root: bool = True
+_default_root: Optional[Tk] = None
 
 
-def NoDefaultRoot():
+def no_default_root():
     """Inhibit setting of default root window.
 
     Call this function to inhibit that the first instance of
     Tk is used for windows without an explicit parent window.
     """
     global _support_default_root
-    _support_default_root = 0
+    _support_default_root = False
     global _default_root
     _default_root = None
     del _default_root
+
+# Kept here for compatibility 10/2020
+NoDefaultRoot = no_default_root
 
 
 def _tkerror(err):
@@ -309,11 +315,11 @@ class Variable:
 
     Subclasses StringVar, IntVar, DoubleVar, BooleanVar are specializations
     that constrain the type of the value returned from get()."""
-    _default = ""
-    _tk = None
-    _tclCommands = None
+    _default: str = ""
+    _tk: Optional[_tkinter.TkappType] = None
+    _tclCommands: Optional[List[str]] = None
 
-    def __init__(self, master=None, value=None, name=None):
+    def __init__(self, master: Optional[Misc] = None, value=None, name: Optional[str] = None):
         """Construct a variable
 
         MASTER can be given as master widget.
@@ -369,7 +375,7 @@ class Variable:
         """Return value of variable."""
         return self._tk.globalgetvar(self._name)
 
-    def _register(self, callback):
+    def _register(self, callback: Callable[[str, str, str], Any]) -> str:
         f = CallWrapper(callback, None, self._root).__call__
         cbname = repr(id(f))
         try:
@@ -386,7 +392,7 @@ class Variable:
         self._tclCommands.append(cbname)
         return cbname
 
-    def trace_add(self, mode, callback):
+    def trace_add(self, mode: Union[List[str], Tuple[str, ...], str], callback: Callable[[str, str, str], Any]) -> str:
         """Define a trace callback for the variable.
 
         Mode is one of "read", "write", "unset", or a list or tuple of
@@ -401,7 +407,7 @@ class Variable:
                       self._name, mode, (cbname,))
         return cbname
 
-    def trace_remove(self, mode, cbname):
+    def trace_remove(self, mode: Union[List[str], Tuple[str, ...], str], cbname: str):
         """Delete the trace callback for a variable.
 
         Mode is one of "read", "write", "unset" or a list or tuple of
@@ -420,13 +426,13 @@ class Variable:
             except ValueError:
                 pass
 
-    def trace_info(self):
+    def trace_info(self) -> List[Tuple[Tuple[str, ...], str]]:
         """Return all trace callback information."""
         splitlist = self._tk.splitlist
         return [(splitlist(k), v) for k, v in map(splitlist,
             splitlist(self._tk.call('trace', 'info', 'variable', self._name)))]
 
-    def trace_variable(self, mode, callback):
+    def trace_variable(self, mode: str, callback: Callable[[str, str, str], Any]) -> str:
         """Define a trace callback for the variable.
 
         MODE is one of "r", "w", "u" for read, write, undefine.
@@ -438,14 +444,15 @@ class Variable:
         This deprecated method wraps a deprecated Tcl method that will
         likely be removed in the future.  Use trace_add() instead.
         """
-        # TODO: Add deprecation warning
+        warnings.warn("The trace/trace_variable method is now deprecated. Please use trace_add instead.",
+                      DeprecationWarning, 2)
         cbname = self._register(callback)
         self._tk.call("trace", "variable", self._name, mode, cbname)
         return cbname
 
     trace = trace_variable
 
-    def trace_vdelete(self, mode, cbname):
+    def trace_vdelete(self, mode: str, cbname: str):
         """Delete the trace callback for a variable.
 
         MODE is one of "r", "w", "u" for read, write, undefine.
@@ -454,7 +461,8 @@ class Variable:
         This deprecated method wraps a deprecated Tcl method that will
         likely be removed in the future.  Use trace_remove() instead.
         """
-        # TODO: Add deprecation warning
+        warnings.warn("The trace_vdelete method is now deprecated. Please use trace_remove instead.",
+                      DeprecationWarning, 2)
         self._tk.call("trace", "vdelete", self._name, mode, cbname)
         cbname = self._tk.splitlist(cbname)[0]
         for m, ca in self.trace_info():
@@ -467,17 +475,18 @@ class Variable:
             except ValueError:
                 pass
 
-    def trace_vinfo(self):
+    def trace_vinfo(self) -> List[Tuple[str, str]]:
         """Return all trace callback information.
 
         This deprecated method wraps a deprecated Tcl method that will
         likely be removed in the future.  Use trace_info() instead.
         """
-        # TODO: Add deprecation warning
+        warnings.warn("The trace_vinfo method is now deprecated. Please use trace_info instead.",
+                      DeprecationWarning, 2)
         return [self._tk.splitlist(x) for x in self._tk.splitlist(
             self._tk.call("trace", "vinfo", self._name))]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Variable):
         """Comparison for equality (==).
 
         Note: if the Variable's master matters to behavior
@@ -491,9 +500,9 @@ class Variable:
 
 class StringVar(Variable):
     """Value holder for strings variables."""
-    _default = ""
+    _default: str = ""
 
-    def __init__(self, master=None, value=None, name=None):
+    def __init__(self, master: Optional[Misc] = None, value: Optional[str] = None, name: Optional[str] = None):
         """Construct a string variable.
 
         MASTER can be given as master widget.
@@ -505,7 +514,7 @@ class StringVar(Variable):
         """
         Variable.__init__(self, master, value, name)
 
-    def get(self):
+    def get(self) -> str:
         """Return value of variable as string."""
         value = self._tk.globalgetvar(self._name)
         if isinstance(value, str):
@@ -515,9 +524,9 @@ class StringVar(Variable):
 
 class IntVar(Variable):
     """Value holder for integer variables."""
-    _default = 0
+    _default: int = 0
 
-    def __init__(self, master=None, value=None, name=None):
+    def __init__(self, master: Optional[Misc] = None, value: Optional[int] = None, name: Optional[str] = None):
         """Construct an integer variable.
 
         MASTER can be given as master widget.
@@ -529,7 +538,7 @@ class IntVar(Variable):
         """
         Variable.__init__(self, master, value, name)
 
-    def get(self):
+    def get(self) -> int:
         """Return the value of the variable as an integer."""
         value = self._tk.globalgetvar(self._name)
         try:
@@ -540,9 +549,9 @@ class IntVar(Variable):
 
 class DoubleVar(Variable):
     """Value holder for float variables."""
-    _default = 0.0
+    _default: float = 0.0
 
-    def __init__(self, master=None, value=None, name=None):
+    def __init__(self, master: Optional[Misc] = None, value: Optional[float] = None, name: Optional[str] = None):
         """Construct a float variable.
 
         MASTER can be given as master widget.
@@ -554,16 +563,16 @@ class DoubleVar(Variable):
         """
         Variable.__init__(self, master, value, name)
 
-    def get(self):
+    def get(self) -> float:
         """Return the value of the variable as a float."""
         return self._tk.getdouble(self._tk.globalgetvar(self._name))
 
 
 class BooleanVar(Variable):
     """Value holder for boolean variables."""
-    _default = False
+    _default: bool = False
 
-    def __init__(self, master=None, value=None, name=None):
+    def __init__(self, master: Optional[Misc] = None, value: Optional[bool] = None, name: Optional[str] = None):
         """Construct a boolean variable.
 
         MASTER can be given as master widget.
@@ -575,16 +584,16 @@ class BooleanVar(Variable):
         """
         Variable.__init__(self, master, value, name)
 
-    def set(self, value):
+    def set(self, value: bool):
         """Set the variable to VALUE."""
         return self._tk.globalsetvar(self._name, self._tk.getboolean(value))
 
     initialize = set
 
-    def get(self):
+    def get(self) -> bool:
         """Return the value of the variable as a bool."""
         try:
-            return self._tk.getboolean(self._tk.globalgetvar(self._name))
+            return bool(self._tk.getboolean(self._tk.globalgetvar(self._name)))
         except TclError:
             raise ValueError("invalid literal for getboolean()")
 
@@ -599,7 +608,7 @@ getint = int
 getdouble = float
 
 
-def getboolean(s):
+def getboolean(s) -> int:
     """Convert true and false to integer values 1 and 0."""
     try:
         return _default_root.tk.getboolean(s)
@@ -615,10 +624,10 @@ class Misc:
     Base class which defines methods common for interior widgets."""
 
     # used for generating child widget names
-    _last_child_ids = None
+    _last_child_ids: Dict[str, int] = None
 
     # XXX font command?
-    _tclCommands = None
+    _tclCommands: Optional[List[str]] = None
 
     def destroy(self):
         """Internal function.
@@ -631,7 +640,7 @@ class Misc:
                 self.tk.deletecommand(name)
             self._tclCommands = None
 
-    def deletecommand(self, name):
+    def deletecommand(self, name: str):
         """Internal function.
 
         Delete the Tcl command provided in NAME."""
@@ -642,11 +651,11 @@ class Misc:
         except ValueError:
             pass
 
-    def tk_strictMotif(self, boolean=None):
+    def tk_strictMotif(self, boolean: Optional[bool] = None) -> bool:
         """Set Tcl internal variable, whether the look and feel
         should adhere to Motif.
 
-        A parameter of 1 means adhere to Motif (e.g. no color
+        A parameter of True means adhere to Motif (e.g. no color
         change if mouse passes over slider).
         Returns the set value."""
         return self.tk.getboolean(self.tk.call(
@@ -678,7 +687,7 @@ class Misc:
         self.tk.call('tkwait', 'variable', name)
     waitvar = wait_variable # XXX b/w compat
 
-    def wait_window(self, window=None):
+    def wait_window(self, window: Optional[BaseWidget, Tk] = None):
         """Wait until a WIDGET is destroyed.
 
         If no parameter is given self is used."""
@@ -686,7 +695,7 @@ class Misc:
             window = self
         self.tk.call('tkwait', 'window', window._w)
 
-    def wait_visibility(self, window=None):
+    def wait_visibility(self, window: Optional[BaseWidget, Tk] = None):
         """Wait until the visibility of a WIDGET changes
         (e.g. it appears).
 
@@ -703,22 +712,22 @@ class Misc:
         """Return value of Tcl variable NAME."""
         return self.tk.getvar(name)
 
-    def getint(self, s):
+    def getint(self, s) -> int:
         try:
             return self.tk.getint(s)
         except TclError as exc:
             raise ValueError(str(exc))
 
-    def getdouble(self, s):
+    def getdouble(self, s) -> float:
         try:
             return self.tk.getdouble(s)
         except TclError as exc:
             raise ValueError(str(exc))
 
-    def getboolean(self, s):
+    def getboolean(self, s) -> bool:
         """Return a boolean value for Tcl boolean values true and false given as parameter."""
         try:
-            return self.tk.getboolean(s)
+            return bool(self.tk.getboolean(s))
         except TclError:
             raise ValueError("invalid literal for getboolean()")
 
@@ -737,7 +746,7 @@ class Misc:
         caution!"""
         self.tk.call('focus', '-force', self._w)
 
-    def focus_get(self):
+    def focus_get(self) -> Optional[BaseWidget, Tk]:
         """Return the widget which has currently the focus in the
         application.
 
@@ -748,7 +757,7 @@ class Misc:
         if name == 'none' or not name: return None
         return self._nametowidget(name)
 
-    def focus_displayof(self):
+    def focus_displayof(self) -> Optional[BaseWidget, Tk]:
         """Return the widget which has currently the focus on the
         display where this widget is located.
 
@@ -757,7 +766,7 @@ class Misc:
         if name == 'none' or not name: return None
         return self._nametowidget(name)
 
-    def focus_lastfor(self):
+    def focus_lastfor(self) -> Optional[BaseWidget, Tk]:
         """Return the widget which would have the focus if top level
         for this widget gets the focus from the window manager."""
         name = self.tk.call('focus', '-lastfor', self._w)
@@ -769,7 +778,7 @@ class Misc:
         be disabled easily."""
         self.tk.call('tk_focusFollowsMouse')
 
-    def tk_focusNext(self):
+    def tk_focusNext(self) -> Optional[BaseWidget, Tk]:
         """Return the next widget in the focus order which follows
         widget which has currently the focus.
 
@@ -782,13 +791,13 @@ class Misc:
         if not name: return None
         return self._nametowidget(name)
 
-    def tk_focusPrev(self):
+    def tk_focusPrev(self) -> Optional[BaseWidget, Tk]:
         """Return previous widget in the focus order. See tk_focusNext for details."""
         name = self.tk.call('tk_focusPrev', self._w)
         if not name: return None
         return self._nametowidget(name)
 
-    def after(self, ms, func=None, *args):
+    def after(self, ms: int, func: Optional[Callable] = None, *args) -> Optional[str]:
         """Call function once after given time.
 
         MS specifies the time in milliseconds. FUNC gives the
@@ -812,7 +821,7 @@ class Misc:
             name = self._register(callit)
             return self.tk.call('after', ms, name)
 
-    def after_idle(self, func, *args):
+    def after_idle(self, func: Callable, *args) -> str:
         """Call FUNC once if the Tcl main loop has no event to
         process.
 
@@ -820,7 +829,7 @@ class Misc:
         after_cancel."""
         return self.after('idle', func, *args)
 
-    def after_cancel(self, id):
+    def after_cancel(self, id: str):
         """Cancel scheduling of function identified with ID.
 
         Identifier returned by after or after_idle must be
@@ -842,7 +851,7 @@ class Misc:
         self.tk.call(('bell',) + self._displayof(displayof))
 
     # Clipboard handling:
-    def clipboard_get(self, **kw):
+    def clipboard_get(self, **kw) -> str:
         """Retrieve data from the clipboard on window's display.
 
         The window keyword defaults to the root window of the Tkinter
@@ -873,7 +882,7 @@ class Misc:
         if 'displayof' not in kw: kw['displayof'] = self._w
         self.tk.call(('clipboard', 'clear') + self._options(kw))
 
-    def clipboard_append(self, string, **kw):
+    def clipboard_append(self, string: str, **kw):
         """Append STRING to the Tk clipboard.
 
         A widget specified at the optional displayof keyword
@@ -884,7 +893,7 @@ class Misc:
               + ('--', string))
     # XXX grab current w/o window argument
 
-    def grab_current(self):
+    def grab_current(self) -> Optional[BaseWidget, Tk]:
         """Return widget which has currently the grab in this application
         or None."""
         name = self.tk.call('grab', 'current', self._w)
@@ -910,14 +919,14 @@ class Misc:
         other applications do not get events anymore."""
         self.tk.call('grab', 'set', '-global', self._w)
 
-    def grab_status(self):
+    def grab_status(self) -> Optional[str]:
         """Return None, "local" or "global" if this widget has
         no, a local or a global grab."""
         status = self.tk.call('grab', 'status', self._w)
         if status == 'none': status = None
         return status
 
-    def option_add(self, pattern, value, priority = None):
+    def option_add(self, pattern: str, value, priority: Optional[str] = None):
         """Set a VALUE (second parameter) for an option
         PATTERN (first parameter).
 
@@ -931,14 +940,14 @@ class Misc:
         It will be reloaded if option_add is called."""
         self.tk.call('option', 'clear')
 
-    def option_get(self, name, className):
+    def option_get(self, name: str, className: str) -> str:
         """Return the value for an option NAME for this widget
         with CLASSNAME.
 
         Values with higher priority override lower values."""
         return self.tk.call('option', 'get', self._w, name, className)
 
-    def option_readfile(self, fileName, priority = None):
+    def option_readfile(self, fileName: str, priority: Optional[str] = None):
         """Read file FILENAME into the option database.
 
         An optional second parameter gives the numeric

@@ -70,7 +70,7 @@ from importlib import import_module
 import textwrap
 import tkinter as tk
 from tkinter.ttk import Scrollbar
-tk.NoDefaultRoot()
+tk.no_default_root()
 
 AboutDialog_spec = {
     'file': 'help_about',

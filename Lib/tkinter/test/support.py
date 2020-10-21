@@ -9,7 +9,7 @@ class AbstractTkTest:
     def setUpClass(cls):
         cls._old_support_default_root = tkinter._support_default_root
         destroy_default_root()
-        tkinter.NoDefaultRoot()
+        tkinter.no_default_root()
         cls.root = tkinter.Tk()
         cls.wantobjects = cls.root.wantobjects()
         # De-maximize main window.

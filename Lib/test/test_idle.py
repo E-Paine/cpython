@@ -18,7 +18,7 @@ idlelib.testing = True
 from idlelib.idle_test import load_tests
 
 if __name__ == '__main__':
-    tk.NoDefaultRoot()
+    tk.no_default_root()
     unittest.main(exit=False)
-    tk._support_default_root = 1
+    tk._support_default_root = True
     tk._default_root = None
