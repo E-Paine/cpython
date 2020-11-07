@@ -31,13 +31,13 @@ tk.mainloop()
 """
 
 import enum
+import importlib.util
+import re
 import sys
-import types
 
 import _tkinter # If this fails your Python may not be configured for Tk
 TclError = _tkinter.TclError
 from tkinter.constants import *
-import re
 
 wantobjects = 1
 
@@ -51,6 +51,28 @@ EXCEPTION = _tkinter.EXCEPTION
 
 _magic_re = re.compile(r'([\\{}])')
 _space_re = re.compile(r'([\s])', re.ASCII)
+
+
+def _lazy_import(name):
+    spec = importlib.util.find_spec(name)
+    loader = importlib.util.LazyLoader(spec.loader)
+    spec.loader = loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    loader.exec_module(module)
+    return module
+
+colorchooser = _lazy_import("tkinter.colorchooser")
+commondialog = _lazy_import("tkinter.commondialog")
+dialog = _lazy_import("tkinter.dialog")
+dnd = _lazy_import("tkinter.dnd")
+filedialog = _lazy_import("tkinter.filedialog")
+font = _lazy_import("tkinter.font")
+messagebox = _lazy_import("tkinter.messagebox")
+scrolledtext = _lazy_import("tkinter.scrolledtext")
+simpledialog = _lazy_import("tkinter.simpledialog")
+tix = _lazy_import("tkinter.tix")
+ttk = _lazy_import("tkinter.ttk")
 
 
 def _join(value):
@@ -4571,8 +4593,8 @@ def _test():
 
 
 __all__ = [name for name, obj in globals().items()
-           if not name.startswith('_') and not isinstance(obj, types.ModuleType)
-           and name not in {'wantobjects'}]
+           if not name.startswith('_')
+           and name not in {'_tkinter', 'enum', 'importlib', 're', 'sys', 'wantobjects'}]
 
 if __name__ == '__main__':
     _test()
