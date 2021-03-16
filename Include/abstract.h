@@ -324,7 +324,7 @@ PyAPI_FUNC(PyObject *) PyObject_Format(PyObject *obj,
    returns itself. */
 PyAPI_FUNC(PyObject *) PyObject_GetIter(PyObject *);
 
-/* Returns 1 if the object 'obj' provides iterator protocols, and 0 otherwise.
+/* Returns non-zero if the object 'obj' provides iterator protocols, and 0 otherwise.
 
    This function always succeeds. */
 PyAPI_FUNC(int) PyIter_Check(PyObject *);
@@ -339,11 +339,6 @@ PyAPI_FUNC(int) PyIter_Check(PyObject *);
 PyAPI_FUNC(PyObject *) PyIter_Next(PyObject *);
 
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x030A0000
-typedef enum {
-    PYGEN_RETURN = 0,
-    PYGEN_ERROR = -1,
-    PYGEN_NEXT = 1,
-} PySendResult;
 
 /* Takes generator, coroutine or iterator object and sends the value into it.
    Returns:
